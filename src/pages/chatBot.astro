@@ -44,6 +44,9 @@ const SENDER_ID = "user_default_2026";
         placeholder="Escribe tu consulta sobre el presupuesto..." 
         autocomplete="off"
       />
+      <button type="button" id="mic-btn" class="mic-btn">
+  🎤
+</button>
       <button type="submit" class="send-btn">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon-send" viewBox="0 0 20 20" fill="currentColor">
           <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
@@ -400,4 +403,138 @@ const SENDER_ID = "user_default_2026";
       console.error(error);
     }
   });
+
+ let audioContext;
+let audioBuffer = [];
+let processor;
+let stream;
+
+const micBtn = document.getElementById('mic-btn');
+
+micBtn.addEventListener('click', async () => {
+  if (audioContext && audioContext.state === 'running') {
+    // DETENER GRABACIÓN
+    console.log("Deteniendo grabación...");
+    stream.getTracks().forEach(track => track.stop());
+    processor.disconnect();
+    audioContext.close();
+    
+    
+    const wavBlob = convertPCMToWAV(flattenArray(audioBuffer), audioContext.sampleRate);
+    micBtn.style.background = "#69C6EA";
+    console.log("Grabación detenida. Enviando WAV de tamaño:", wavBlob.size);
+    sendAudioToBackend(wavBlob);
+    
+  } else {
+    // INICIAR GRABACIÓN
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 16000});
+      const source = audioContext.createMediaStreamSource(stream);
+      processor = audioContext.createScriptProcessor(4096, 1, 1);
+      
+      audioBuffer = []; // Reset
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+      
+      processor.onaudioprocess = (e) => {
+        const float32Data = e.inputBuffer.getChannelData(0);
+        audioBuffer.push(new Float32Array(float32Data));
+      };
+      
+      micBtn.style.background = "#FE4DB1";
+      console.log("Grabación iniciada (WAV)");
+    } catch (e) {
+      console.error("Error al acceder al micro:", e);
+      alert("No pude acceder al micro.");
+    }
+  }
+});
+
+// Funciones auxiliares para generar el WAV
+function flattenArray(buffer) {
+  let length = 0;
+  for(let i=0; i<buffer.length; i++) length += buffer[i].length;
+  let result = new Float32Array(length);
+  let offset = 0;
+  for(let i=0; i<buffer.length; i++) {
+    result.set(buffer[i], offset);
+    offset += buffer[i].length;
+  }
+  return result;
+}
+
+function convertPCMToWAV(pcmData, sampleRate) {
+  const buffer = new ArrayBuffer(44 + pcmData.length * 2);
+  const view = new DataView(buffer);
+  const writeString = (view, offset, string) => {
+    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+  };
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + pcmData.length * 2, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); 
+  view.setUint16(22, 1, true); 
+  view.setUint32(24, sampleRate, true); 
+  view.setUint32(28, sampleRate * 2, true); 
+  view.setUint16(32, 2, true); 
+  view.setUint16(34, 16, true); 
+  writeString(view, 36, 'data');
+  view.setUint32(40, pcmData.length * 2, true);
+  for (let i = 0; i < pcmData.length; i++) {
+    const s = Math.max(-1, Math.min(1, pcmData[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+async function sendAudioToBackend(audioBlob) {
+  showLoading(); 
+  console.log("DEBUG: Iniciando conexión WebSocket con el WAV...");
+  
+  const sessionId = SENDER_ID;
+  const ws = new WebSocket(`ws://127.0.0.1:8000/ws/agent/voice/${sessionId}?mode=response`);
+
+  ws.binaryType = "blob"; 
+
+  ws.onopen = () => {
+    console.log("DEBUG: Conexión abierta. Enviando audio de tamaño:", audioBlob.size);
+    ws.send(audioBlob);
+  };
+
+  ws.onmessage = async (event) => {
+   
+    if (event.data instanceof Blob) {
+      console.log("Audio recibido, reproduciendo...");
+      const audioUrl = URL.createObjectURL(event.data);
+      const audio = new Audio(audioUrl);
+      audio.play().catch(e => console.error("Error al reproducir audio:", e));
+      hideLoading();
+    } 
+    
+    else {
+      console.log("JSON recibido:", event.data);
+      const data = JSON.parse(event.data);
+      
+      
+      if (data.user_text && data.user_text.trim() !== "") {
+        appendMessage(data.user_text, 'user');
+      }
+
+    
+      const textoRespuesta = data.voice_reply || data.explanation || "Respuesta recibida";
+      appendMessage(textoRespuesta, 'agent');
+    }
+  };
+
+  ws.onclose = (event) => {
+    console.log("DEBUG: WebSocket cerrado. Código:", event.code);
+    hideLoading();
+    if (event.code !== 1000) {
+      appendMessage("El servidor cerró la conexión inesperadamente.", 'agent');
+    }
+  };
+}
 </script>
