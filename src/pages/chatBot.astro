@@ -415,12 +415,12 @@ micBtn.addEventListener('click', async () => {
   if (audioContext && audioContext.state === 'running') {
     // DETENER GRABACIÓN
     console.log("Deteniendo grabación...");
+    const recordedSampleRate = audioContext.sampleRate;
     stream.getTracks().forEach(track => track.stop());
     processor.disconnect();
     audioContext.close();
-    
-    
-    const wavBlob = convertPCMToWAV(flattenArray(audioBuffer), audioContext.sampleRate);
+
+    const wavBlob = convertPCMToWAV(flattenArray(audioBuffer), recordedSampleRate);
     micBtn.style.background = "#69C6EA";
     console.log("Grabación detenida. Enviando WAV de tamaño:", wavBlob.size);
     sendAudioToBackend(wavBlob);
@@ -493,15 +493,16 @@ function convertPCMToWAV(pcmData, sampleRate) {
 async function sendAudioToBackend(audioBlob) {
   showLoading(); 
   console.log("DEBUG: Iniciando conexión WebSocket con el WAV...");
-  
+
   const sessionId = SENDER_ID;
-  const ws = new WebSocket(`ws://127.0.0.1:8000/ws/agent/voice/${sessionId}?mode=response`);
+  const ws = new WebSocket(`ws://127.0.0.1:8000/ws/agent/voice/${sessionId}?mode=response&output=both`);
 
   ws.binaryType = "blob"; 
 
-  ws.onopen = () => {
+  ws.onopen = async () => {
+    const audioBytes = await audioBlob.arrayBuffer();
     console.log("DEBUG: Conexión abierta. Enviando audio de tamaño:", audioBlob.size);
-    ws.send(audioBlob);
+    ws.send(audioBytes);
   };
 
   ws.onmessage = async (event) => {
