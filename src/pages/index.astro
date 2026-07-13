@@ -1,3 +1,7 @@
+---
+import ChatBot from './chatBot.astro';
+---
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,7 +18,7 @@
 
         <nav class="nav-links">
             <a href="/" class="nav-link">Inicio</a>
-            <a href="/sala" class="nav-link">ChatBot</a>
+            
             <a href="/fuentes" class="nav-link">Datos</a>
         </nav>
     </header>
@@ -27,7 +31,6 @@
             </p>
         </div>
 
-        <a href="/sala" class="floating-btn">ChatBot</a>
     </main>
 
     <footer class="footer">
@@ -35,6 +38,8 @@
             Datos al Ecosistema 2026: IA para Colombia ♢
         </a>
     </footer>
+
+    <ChatBot />
 
 </body>
 </html>
@@ -46,7 +51,6 @@
         box-sizing: border-box;
         color: #D9D9D9;
         font-family: system-ui, -apple-system, sans-serif;
-        
         
         background: linear-gradient(135deg, #121212, #35113b, #0f2b37, #121212, #9432ab, #4688a2);
         background-size: 400% 400%;
@@ -61,15 +65,9 @@
     }
 
     @keyframes moverShaderSuave {
-        0% {
-            background-position: 0% 50%;
-        }
-        50% {
-            background-position: 100% 50%;
-        }
-        100% {
-            background-position: 0% 50%;
-        }
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
     .navbar {
@@ -182,3 +180,28 @@
         text-decoration: underline;
     }
 </style>
+
+<script>
+    
+    const btnNav = document.querySelector('.nav-links a[href="#"]');
+    const btnFloating = document.querySelector('.floating-btn');
+
+    
+    function abrirChat() {
+        
+        const chatContainer = document.querySelector('.chatbot-container') || document.querySelector('#chatbot-toggle');
+        
+        if (chatContainer) {
+            
+            chatContainer.classList.add('active'); 
+            
+            (chatContainer as HTMLElement).click();
+        } else {
+            console.log("Componente ChatBot detectado en el HTML, pero necesitas revisar qué ID o Clase usa dentro de chatBot.astro para abrirse.");
+        }
+    }
+
+    
+    btnNav?.addEventListener('click', (e) => { e.preventDefault(); abrirChat(); });
+    btnFloating?.addEventListener('click', (e) => { e.preventDefault(); abrirChat(); });
+</script>
