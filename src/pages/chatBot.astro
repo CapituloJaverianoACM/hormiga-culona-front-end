@@ -285,7 +285,27 @@ const SENDER_ID = "user_default_2026";
     border-radius: 9999px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+  .message-box.chart-box {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 90%;
+    width: 100%;
+  }
+
+  .chart-container-wrapper {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+  }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script define:vars={{ BACKEND_URL }}>
   const toggleBtn = document.getElementById('chat-toggle-btn');
@@ -381,15 +401,16 @@ const SENDER_ID = "user_default_2026";
     showLoading();
 
     try {
-      const response = await fetch(`${BACKEND_URL}/agent/chat`, {
+      const response = await fetch(`${BACKEND_URL}/agent/ui`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
+      
         body: JSON.stringify({
           content: prompt,
-          sender_id: SENDER_ID
+          preview_limit: 5
         })
       });
 
@@ -397,9 +418,7 @@ const SENDER_ID = "user_default_2026";
 
       if (response.ok) {
         const data = await response.json();
-        
-        const reply = data.agent_reply || data.response || data.reply;
-        appendMessage(reply, 'agent');
+        renderAgentResponse(data);
       } else {
         appendMessage('No logré conectar con el servidor de datos públicos.', 'agent');
       }
@@ -521,18 +540,16 @@ async function sendAudioToBackend(audioBlob) {
       hideLoading();
     } 
     
-    else {
+   else {
       console.log("JSON recibido:", event.data);
       const data = JSON.parse(event.data);
-      
       
       if (data.user_text && data.user_text.trim() !== "") {
         appendMessage(data.user_text, 'user');
       }
 
-    
-      const textoRespuesta = data.voice_reply || data.explanation || "Respuesta recibida";
-      appendMessage(textoRespuesta, 'agent');
+      
+      renderAgentResponse(data);
     }
   };
 
@@ -543,5 +560,89 @@ async function sendAudioToBackend(audioBlob) {
       appendMessage("El servidor cerró la conexión inesperadamente.", 'agent');
     }
   };
+}
+function renderAgentResponse(data) {
+  const replyText = data.explanation || data.agent_reply || data.voice_reply || "Resultado procesado";
+  appendMessage(replyText, 'agent');
+
+  if (data.rows && data.rows.length > 0 && data.columns && data.columns.length >= 2) {
+    const componente = (data.component || "").toLowerCase();
+    if (componente.includes("chart") || componente.includes("grafico") || componente.includes("bar") || componente.includes("line") || componente.includes("pie")) {
+      appendChartMessage(data);
+    }
+  }
+}
+
+function appendChartMessage(data) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('message-wrapper', 'agent');
+  wrapper.style.display = 'flex';
+  wrapper.style.justifyContent = 'flex-start';
+  wrapper.style.width = '100%';
+
+  const box = document.createElement('div');
+  box.classList.add('message-box', 'chart-box');
+
+  const titleEl = document.createElement('strong');
+  titleEl.style.display = 'block';
+  titleEl.style.marginBottom = '5px';
+  titleEl.style.color = '#69C6EA';
+  titleEl.innerText = data.title || 'Visualización de datos';
+  box.appendChild(titleEl);
+
+  const chartWrapper = document.createElement('div');
+  chartWrapper.classList.add('chart-container-wrapper');
+  
+  const canvas = document.createElement('canvas');
+  const chartId = 'chart_' + Math.random().toString(36).substring(2, 9);
+  canvas.id = chartId;
+  
+  chartWrapper.appendChild(canvas);
+  box.appendChild(chartWrapper);
+  wrapper.appendChild(box);
+  
+  messagesContainer.appendChild(wrapper);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  buildChart(chartId, data);
+}
+
+function buildChart(ctx, data) {
+  const rows = data.rows || [];
+
+  
+  const tus_etiquetas = rows.map(row => {
+    return row["año"] || row["anio"] || row["year"] || Object.values(row)[0] || "Sin año";
+  });
+
+  
+  const tus_valores = rows.map(row => {
+    const valor = row["presupuesto"] || row["Presupuesto Definitivo"] || row["total"] || Object.values(row)[1] || 0;
+    
+    
+    return typeof valor === 'string' ? parseFloat(valor.replace(/[^0-9.-]/g, '')) : valor;
+  });
+
+ 
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: tus_etiquetas, 
+      datasets: [{
+        label: data.title || 'Presupuesto total por año',
+        data: tus_valores,    
+        backgroundColor: 'rgba(105, 198, 234, 0.6)', 
+        borderColor: '#69C6EA',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { color: '#ffffff', font: { size: 11 } } },
+        y: { ticks: { color: '#ffffff' } }
+      }
+    }
+  });
 }
 </script>
