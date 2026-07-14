@@ -17,20 +17,26 @@ import ChatBot from './chatBot.astro';
         </div>
 
         <nav class="nav-links">
-            <a href="/" class="nav-link">Inicio</a>
-            
-            <a href="/fuentes" class="nav-link">Datos</a>
+            <a href="/" id="nav-inicio" class="nav-link active-link">Inicio</a>
+            <!-- Botón del Chatbot agregado a la Navbar (Se removió la sección de Datos) -->
+            <button id="nav-chatbot" class="nav-link-btn">Chatbot</button>
         </nav>
     </header>
 
     <main class="main-content">
-        <div class="info-block">
+        <!-- Vista de Inicio Tradicional -->
+        <div id="view-inicio" class="info-block">
             <h1>Asistente Virtual para Datos Abiertos</h1>
             <p>
                 Una plataforma interactiva diseñada para transformar datos presupuestales públicos complejos en información clara, accesible y navegable para cualquier ciudadano.
             </p>
+            <button id="btn-comenzar" class="action-btn">Comenzar a chatear</button>
         </div>
 
+        <!-- Contenedor Pantalla Completa para el Chat -->
+        <div id="view-chatbot" class="chat-full-screen hidden">
+            <ChatBot />
+        </div>
     </main>
 
     <footer class="footer">
@@ -38,8 +44,6 @@ import ChatBot from './chatBot.astro';
             Datos al Ecosistema 2026: IA para Colombia ♢
         </a>
     </footer>
-
-    <ChatBot />
 
 </body>
 </html>
@@ -98,16 +102,20 @@ import ChatBot from './chatBot.astro';
         gap: 1.5rem;
     }
 
-    .nav-link {
+    .nav-link, .nav-link-btn {
         color: #D9D9D9;
         text-decoration: none;
         font-weight: bold;
         padding: 0.5rem 1.25rem;
         border-radius: 9999px;
         transition: all 0.2s ease;
+        background: none;
+        border: none;
+        font-size: 1rem;
+        cursor: pointer;
     }
 
-    .nav-link:hover {
+    .nav-link:hover, .nav-link-btn:hover, .active-link {
         background-color: #69C6EA;
         color: #292929;
     }
@@ -118,8 +126,8 @@ import ChatBot from './chatBot.astro';
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 2rem;
         position: relative;
+        width: 100%;
     }
 
     .info-block {
@@ -140,25 +148,42 @@ import ChatBot from './chatBot.astro';
         color: #e2e2e2;
         line-height: 1.6;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        margin-bottom: 2rem;
     }
 
-    .floating-btn {
-        position: absolute;
-        bottom: 2rem;
-        right: 2rem;
+    .action-btn {
         background-color: #D9D9D9;
         color: #292929;
         font-weight: bold;
-        padding: 0.75rem 1.5rem;
+        padding: 0.75rem 2rem;
         border-radius: 9999px;
-        text-decoration: none;
+        border: none;
+        cursor: pointer;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         transition: all 0.2s ease;
+        font-size: 1rem;
     }
 
-    .floating-btn:hover {
+    .action-btn:hover {
         background-color: #69C6EA;
         transform: translateY(-2px);
+    }
+
+    /* Contenedor a pantalla completa para el chatbot */
+    .chat-full-screen {
+        width: 100%;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: calc(100vh - 150px);
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+
+    .hidden {
+        display: none !important;
     }
 
     .footer {
@@ -182,26 +207,39 @@ import ChatBot from './chatBot.astro';
 </style>
 
 <script>
+    const navInicio = document.getElementById('nav-inicio');
+    const navChatbot = document.getElementById('nav-chatbot');
+    const btnComenzar = document.getElementById('btn-comenzar');
     
-    const btnNav = document.querySelector('.nav-links a[href="#"]');
-    const btnFloating = document.querySelector('.floating-btn');
+    const viewInicio = document.getElementById('view-inicio');
+    const viewChatbot = document.getElementById('view-chatbot');
 
-    
-    function abrirChat() {
+    function mostrarChatbot() {
+        viewInicio?.classList.add('hidden');
+        viewChatbot?.classList.remove('hidden');
         
-        const chatContainer = document.querySelector('.chatbot-container') || document.querySelector('#chatbot-toggle');
-        
-        if (chatContainer) {
-            
-            chatContainer.classList.add('active'); 
-            
-            (chatContainer as HTMLElement).click();
-        } else {
-            console.log("Componente ChatBot detectado en el HTML, pero necesitas revisar qué ID o Clase usa dentro de chatBot.astro para abrirse.");
+        navInicio?.classList.remove('active-link');
+        navChatbot?.classList.add('active-link');
+
+       
+        const toggleBtnInterno = document.getElementById('chat-toggle-btn');
+        if (toggleBtnInterno && !toggleBtnInterno.classList.contains('hidden')) {
+            (toggleBtnInterno as HTMLElement).click();
         }
     }
 
-    
-    btnNav?.addEventListener('click', (e) => { e.preventDefault(); abrirChat(); });
-    btnFloating?.addEventListener('click', (e) => { e.preventDefault(); abrirChat(); });
+    function mostrarInicio() {
+        viewChatbot?.classList.add('hidden');
+        viewInicio?.classList.remove('hidden');
+        
+        navChatbot?.classList.remove('active-link');
+        navInicio?.classList.add('active-link');
+    }
+
+    navChatbot?.addEventListener('click', mostrarChatbot);
+    btnComenzar?.addEventListener('click', mostrarChatbot);
+    navInicio?.addEventListener('click', (e) => {
+        e.preventDefault();
+        mostrarInicio();
+    });
 </script>

@@ -58,27 +58,22 @@ const SENDER_ID = "user_default_2026";
 
 <style>
   .chatbot-container {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 900px;   
+    margin: 0 auto;
     z-index: 1000;
     font-family: system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
 
   
   .chat-btn {
-    background-color: #D9D9D9;
-    color: #292929;
-    font-weight: bold;
-    padding: 0.75rem 1.5rem;
-    border-radius: 9999px;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
+    display: none !important;
   }
 
   .chat-btn:hover {
@@ -88,8 +83,8 @@ const SENDER_ID = "user_default_2026";
 
   
   .chat-window {
-    width: 400px;
-    height: 550px;
+    width: 100%;       
+    height: 100%;      
     background: rgba(18, 18, 18, 0.75);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
@@ -104,6 +99,30 @@ const SENDER_ID = "user_default_2026";
 
   .hidden {
     display: none !important;
+  }
+
+  .mic-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 0.6rem;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    width: 38px;
+    height: 38px;
+  }
+
+  .mic-btn:hover {
+    background: #69C6EA;
+    color: #292929;
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(105, 198, 234, 0.4);
   }
 
   
@@ -175,11 +194,11 @@ const SENDER_ID = "user_default_2026";
   }
 
   .message-box {
-    max-width: 80%;
-    padding: 0.75rem 1rem;
-    font-size: 0.92rem;
-    line-height: 1.4;
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 100%;
+    width: 100%;
+    display: block;
   }
 
   
@@ -288,20 +307,33 @@ const SENDER_ID = "user_default_2026";
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
   .message-box.chart-box {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    max-width: 90%;
-    width: 100%;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+
+    width: 90%;
+    max-width: 700px;
+
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
   }
 
   .chart-container-wrapper {
-    position: relative;
+   position: relative;
     width: 100%;
-    height: 200px;
-    margin-top: 10px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    padding: 8px;
+    max-width: 900px;
+    height: 550px;
+    margin: 15px auto 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .chart-container-wrapper canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    display: block;
   }
 </style>
 
@@ -315,6 +347,12 @@ const SENDER_ID = "user_default_2026";
   const chatInput = document.getElementById('chat-input');
   const messagesContainer = document.getElementById('chat-messages');
 
+  
+  if (chatWindow) {
+    chatWindow.classList.remove('hidden');
+    chatInput?.focus();
+  }
+
   if (!sessionStorage.getItem('CHAT_SESSION_ID')) {
     const uniqueId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
     sessionStorage.setItem('CHAT_SESSION_ID', uniqueId);
@@ -322,17 +360,16 @@ const SENDER_ID = "user_default_2026";
   const SENDER_ID = sessionStorage.getItem('CHAT_SESSION_ID');
 
   
-  toggleBtn.addEventListener('click', () => {
+  toggleBtn?.addEventListener('click', () => {
     chatWindow.classList.remove('hidden');
     toggleBtn.classList.add('hidden');
     chatInput.focus();
   });
 
-  closeBtn.addEventListener('click', () => {
+  closeBtn?.addEventListener('click', () => {
     chatWindow.classList.add('hidden');
     toggleBtn.classList.remove('hidden');
   });
-
   function appendMessage(text, sender) {
     const wrapper = document.createElement('div');
     wrapper.classList.add('message-wrapper', sender);
@@ -577,7 +614,7 @@ function appendChartMessage(data) {
   const wrapper = document.createElement('div');
   wrapper.classList.add('message-wrapper', 'agent');
   wrapper.style.display = 'flex';
-  wrapper.style.justifyContent = 'flex-start';
+  wrapper.style.justifyContent = 'center';
   wrapper.style.width = '100%';
 
   const box = document.createElement('div');
@@ -587,6 +624,7 @@ function appendChartMessage(data) {
   titleEl.style.display = 'block';
   titleEl.style.marginBottom = '5px';
   titleEl.style.color = '#69C6EA';
+  titleEl.style.textAlign = 'center';
   titleEl.innerText = data.title || 'Visualización de datos';
   box.appendChild(titleEl);
 
@@ -597,6 +635,9 @@ function appendChartMessage(data) {
   const chartId = 'chart_' + Math.random().toString(36).substring(2, 9);
   canvas.id = chartId;
   
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+
   chartWrapper.appendChild(canvas);
   box.appendChild(chartWrapper);
   wrapper.appendChild(box);
@@ -638,6 +679,7 @@ function buildChart(ctx, data) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false, 
       scales: {
         x: { ticks: { color: '#ffffff', font: { size: 11 } } },
         y: { ticks: { color: '#ffffff' } }
