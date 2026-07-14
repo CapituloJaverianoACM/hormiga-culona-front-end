@@ -287,13 +287,19 @@ const SENDER_ID = "user_default_2026";
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 </style>
 
-<script define:vars={{ BACKEND_URL, SENDER_ID }}>
+<script define:vars={{ BACKEND_URL }}>
   const toggleBtn = document.getElementById('chat-toggle-btn');
   const closeBtn = document.getElementById('chat-close-btn');
   const chatWindow = document.getElementById('chat-window');
   const chatForm = document.getElementById('chat-form');
   const chatInput = document.getElementById('chat-input');
   const messagesContainer = document.getElementById('chat-messages');
+
+  if (!sessionStorage.getItem('CHAT_SESSION_ID')) {
+    const uniqueId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    sessionStorage.setItem('CHAT_SESSION_ID', uniqueId);
+  }
+  const SENDER_ID = sessionStorage.getItem('CHAT_SESSION_ID');
 
   
   toggleBtn.addEventListener('click', () => {
