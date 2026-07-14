@@ -1,0 +1,648 @@
+---
+const BACKEND_URL = "http://127.0.0.1:8000"; 
+const SENDER_ID = "user_default_2026"; 
+---
+
+<div class="chatbot-container">
+  
+  <button id="chat-toggle-btn" class="chat-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon-msg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+    <span>ChatBot</span>
+  </button>
+
+  
+  <div id="chat-window" class="chat-window hidden">
+    
+    <div class="chat-header">
+      <div class="agent-status">
+        <div class="status-dot"></div>
+        <span class="agent-title">Agent 🐜</span>
+      </div>
+      <button id="chat-close-btn" class="close-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-close" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+
+    
+    <div id="chat-messages" class="chat-messages custom-scrollbar">
+      <div class="message-wrapper agent">
+        <div class="message-box">
+          ¡Hola! Transformo datos presupuestales complejos en respuestas sencillas. ¿Qué deseas consultar hoy?
+        </div>
+      </div>
+    </div>
+
+    
+    <form id="chat-form" class="chat-form">
+      <input 
+        type="text" 
+        id="chat-input" 
+        placeholder="Escribe tu consulta sobre el presupuesto..." 
+        autocomplete="off"
+      />
+      <button type="button" id="mic-btn" class="mic-btn">
+  🎤
+</button>
+      <button type="submit" class="send-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-send" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+        </svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .chatbot-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  
+  .chat-btn {
+    background-color: #D9D9D9;
+    color: #292929;
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+  }
+
+  .chat-btn:hover {
+    background-color: #69C6EA;
+    transform: translateY(-2px);
+  }
+
+  
+  .chat-window {
+    width: 400px;
+    height: 550px;
+    background: rgba(18, 18, 18, 0.75);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  
+  .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(18, 18, 18, 0.3);
+  }
+
+  .agent-status {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #69C6EA;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #69C6EA;
+  }
+
+  .agent-title {
+    color: #D9D9D9;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: #D9D9D9;
+    cursor: pointer;
+    padding: 0.2rem;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+  }
+
+  .close-btn:hover {
+    color: #FE4DB1;
+  }
+
+ 
+  .chat-messages {
+    flex-grow: 1;
+    padding: 1.25rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .message-wrapper {
+    display: flex;
+    width: 100%;
+  }
+
+  .message-wrapper.user {
+    justify-content: flex-end;
+  }
+
+  .message-wrapper.agent {
+    justify-content: flex-start;
+  }
+
+  .message-box {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    border-radius: 16px;
+  }
+
+  
+  .agent .message-box {
+    background: rgba(255, 255, 255, 0.07);
+    color: #E2E2E2;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top-left-radius: 4px;
+  }
+
+  
+  .user .message-box {
+  background: linear-gradient(90deg, #ec4899 0%, #d946ef 100%);
+  color: #ffffff;
+  font-weight: 500;
+  border-top-right-radius: 4px;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+  
+  .chat-form {
+    display: flex;
+    padding: 1rem;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(18, 18, 18, 0.4);
+  }
+
+  .chat-form input {
+    flex-grow: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    padding: 0.6rem 1.2rem;
+    color: #D9D9D9;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+  }
+
+  .chat-form input:focus {
+    outline: none;
+    border-color: #69C6EA;
+    box-shadow: 0 0 10px rgba(105, 198, 234, 0.2);
+  }
+
+  .send-btn {
+    background: #69C6EA;
+    border: none;
+    color: #292929;
+    padding: 0.6rem;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .send-btn:hover {
+    background: #FE4DB1;
+    transform: scale(1.05);
+  }
+
+  
+  .icon-msg, .icon-close, .icon-send {
+    width: 20px;
+    height: 20px;
+  }
+  .icon-send {
+    transform: rotate(90deg);
+  }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 0.8rem 1.2rem;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    border-top-left-radius: 4px;
+    width: fit-content;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    background: #69C6EA;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+  }
+  .dot:nth-child(1) { animation-delay: -0.32s; }
+  .dot:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1.0); }
+  }
+
+  
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+  .message-box.chart-box {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 90%;
+    width: 100%;
+  }
+
+  .chart-container-wrapper {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script define:vars={{ BACKEND_URL }}>
+  const toggleBtn = document.getElementById('chat-toggle-btn');
+  const closeBtn = document.getElementById('chat-close-btn');
+  const chatWindow = document.getElementById('chat-window');
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+  const messagesContainer = document.getElementById('chat-messages');
+
+  if (!sessionStorage.getItem('CHAT_SESSION_ID')) {
+    const uniqueId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    sessionStorage.setItem('CHAT_SESSION_ID', uniqueId);
+  }
+  const SENDER_ID = sessionStorage.getItem('CHAT_SESSION_ID');
+
+  
+  toggleBtn.addEventListener('click', () => {
+    chatWindow.classList.remove('hidden');
+    toggleBtn.classList.add('hidden');
+    chatInput.focus();
+  });
+
+  closeBtn.addEventListener('click', () => {
+    chatWindow.classList.add('hidden');
+    toggleBtn.classList.remove('hidden');
+  });
+
+  function appendMessage(text, sender) {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('message-wrapper', sender);
+
+    
+    if (sender === 'user') {
+      wrapper.style.display = 'flex';
+      wrapper.style.justifyContent = 'flex-end';
+      wrapper.style.width = '100%';
+    } else {
+      wrapper.style.display = 'flex';
+      wrapper.style.justifyContent = 'flex-start';
+      wrapper.style.width = '100%';
+    }
+
+    const box = document.createElement('div');
+    box.classList.add('message-box');
+    box.innerText = text;
+
+    
+    if (sender === 'user') {
+      box.style.background = 'linear-gradient(90deg, #ec4899 0%, #d946ef 100%)';
+      box.style.color = '#ffffff';
+      box.style.fontWeight = '500';
+      box.style.padding = '0.75rem 1rem';
+      box.style.borderRadius = '16px 16px 4px 16px'; 
+      box.style.maxWidth = '80%';
+      box.style.boxShadow = '0 4px 12px rgba(236, 72, 153, 0.3)';
+      box.style.fontSize = '0.92rem';
+      box.style.lineHeight = '1.4';
+    }
+
+    wrapper.appendChild(box);
+    messagesContainer.appendChild(wrapper);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  function showLoading() {
+    const wrapper = document.createElement('div');
+    wrapper.id = 'loading-wrapper';
+    wrapper.classList.add('message-wrapper', 'agent');
+    wrapper.innerHTML = `
+      <div class="typing-indicator">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    `;
+    messagesContainer.appendChild(wrapper);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  function hideLoading() {
+    const loader = document.getElementById('loading-wrapper');
+    if (loader) loader.remove();
+  }
+
+  
+  chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const prompt = chatInput.value.trim();
+    if (!prompt) return;
+
+    appendMessage(prompt, 'user');
+    chatInput.value = '';
+    showLoading();
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/agent/ui`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+      
+        body: JSON.stringify({
+          content: prompt,
+          preview_limit: 5
+        })
+      });
+
+      hideLoading();
+
+      if (response.ok) {
+        const data = await response.json();
+        renderAgentResponse(data);
+      } else {
+        appendMessage('No logré conectar con el servidor de datos públicos.', 'agent');
+      }
+    } catch (error) {
+      hideLoading();
+      appendMessage('Error de conexión con el backend.', 'agent');
+      console.error(error);
+    }
+  });
+
+ let audioContext;
+let audioBuffer = [];
+let processor;
+let stream;
+
+const micBtn = document.getElementById('mic-btn');
+
+micBtn.addEventListener('click', async () => {
+  if (audioContext && audioContext.state === 'running') {
+    // DETENER GRABACIÓN
+    console.log("Deteniendo grabación...");
+    const recordedSampleRate = audioContext.sampleRate;
+    stream.getTracks().forEach(track => track.stop());
+    processor.disconnect();
+    audioContext.close();
+
+    const wavBlob = convertPCMToWAV(flattenArray(audioBuffer), recordedSampleRate);
+    micBtn.style.background = "#69C6EA";
+    console.log("Grabación detenida. Enviando WAV de tamaño:", wavBlob.size);
+    sendAudioToBackend(wavBlob);
+    
+  } else {
+    // INICIAR GRABACIÓN
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 16000});
+      const source = audioContext.createMediaStreamSource(stream);
+      processor = audioContext.createScriptProcessor(4096, 1, 1);
+      
+      audioBuffer = []; // Reset
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+      
+      processor.onaudioprocess = (e) => {
+        const float32Data = e.inputBuffer.getChannelData(0);
+        audioBuffer.push(new Float32Array(float32Data));
+      };
+      
+      micBtn.style.background = "#FE4DB1";
+      console.log("Grabación iniciada (WAV)");
+    } catch (e) {
+      console.error("Error al acceder al micro:", e);
+      alert("No pude acceder al micro.");
+    }
+  }
+});
+
+// Funciones auxiliares para generar el WAV
+function flattenArray(buffer) {
+  let length = 0;
+  for(let i=0; i<buffer.length; i++) length += buffer[i].length;
+  let result = new Float32Array(length);
+  let offset = 0;
+  for(let i=0; i<buffer.length; i++) {
+    result.set(buffer[i], offset);
+    offset += buffer[i].length;
+  }
+  return result;
+}
+
+function convertPCMToWAV(pcmData, sampleRate) {
+  const buffer = new ArrayBuffer(44 + pcmData.length * 2);
+  const view = new DataView(buffer);
+  const writeString = (view, offset, string) => {
+    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+  };
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + pcmData.length * 2, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); 
+  view.setUint16(22, 1, true); 
+  view.setUint32(24, sampleRate, true); 
+  view.setUint32(28, sampleRate * 2, true); 
+  view.setUint16(32, 2, true); 
+  view.setUint16(34, 16, true); 
+  writeString(view, 36, 'data');
+  view.setUint32(40, pcmData.length * 2, true);
+  for (let i = 0; i < pcmData.length; i++) {
+    const s = Math.max(-1, Math.min(1, pcmData[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+async function sendAudioToBackend(audioBlob) {
+  showLoading(); 
+  console.log("DEBUG: Iniciando conexión WebSocket con el WAV...");
+
+  const sessionId = SENDER_ID;
+  const ws = new WebSocket(`ws://127.0.0.1:8000/ws/agent/voice/${sessionId}?mode=response&output=both`);
+
+  ws.binaryType = "blob"; 
+
+  ws.onopen = async () => {
+    const audioBytes = await audioBlob.arrayBuffer();
+    console.log("DEBUG: Conexión abierta. Enviando audio de tamaño:", audioBlob.size);
+    ws.send(audioBytes);
+  };
+
+  ws.onmessage = async (event) => {
+   
+    if (event.data instanceof Blob) {
+      console.log("Audio recibido, reproduciendo...");
+      const audioUrl = URL.createObjectURL(event.data);
+      const audio = new Audio(audioUrl);
+      audio.play().catch(e => console.error("Error al reproducir audio:", e));
+      hideLoading();
+    } 
+    
+   else {
+      console.log("JSON recibido:", event.data);
+      const data = JSON.parse(event.data);
+      
+      if (data.user_text && data.user_text.trim() !== "") {
+        appendMessage(data.user_text, 'user');
+      }
+
+      
+      renderAgentResponse(data);
+    }
+  };
+
+  ws.onclose = (event) => {
+    console.log("DEBUG: WebSocket cerrado. Código:", event.code);
+    hideLoading();
+    if (event.code !== 1000) {
+      appendMessage("El servidor cerró la conexión inesperadamente.", 'agent');
+    }
+  };
+}
+function renderAgentResponse(data) {
+  const replyText = data.explanation || data.agent_reply || data.voice_reply || "Resultado procesado";
+  appendMessage(replyText, 'agent');
+
+  if (data.rows && data.rows.length > 0 && data.columns && data.columns.length >= 2) {
+    const componente = (data.component || "").toLowerCase();
+    if (componente.includes("chart") || componente.includes("grafico") || componente.includes("bar") || componente.includes("line") || componente.includes("pie")) {
+      appendChartMessage(data);
+    }
+  }
+}
+
+function appendChartMessage(data) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('message-wrapper', 'agent');
+  wrapper.style.display = 'flex';
+  wrapper.style.justifyContent = 'flex-start';
+  wrapper.style.width = '100%';
+
+  const box = document.createElement('div');
+  box.classList.add('message-box', 'chart-box');
+
+  const titleEl = document.createElement('strong');
+  titleEl.style.display = 'block';
+  titleEl.style.marginBottom = '5px';
+  titleEl.style.color = '#69C6EA';
+  titleEl.innerText = data.title || 'Visualización de datos';
+  box.appendChild(titleEl);
+
+  const chartWrapper = document.createElement('div');
+  chartWrapper.classList.add('chart-container-wrapper');
+  
+  const canvas = document.createElement('canvas');
+  const chartId = 'chart_' + Math.random().toString(36).substring(2, 9);
+  canvas.id = chartId;
+  
+  chartWrapper.appendChild(canvas);
+  box.appendChild(chartWrapper);
+  wrapper.appendChild(box);
+  
+  messagesContainer.appendChild(wrapper);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  buildChart(chartId, data);
+}
+
+function buildChart(ctx, data) {
+  const rows = data.rows || [];
+
+  
+  const tus_etiquetas = rows.map(row => {
+    return row["año"] || row["anio"] || row["year"] || Object.values(row)[0] || "Sin año";
+  });
+
+  
+  const tus_valores = rows.map(row => {
+    const valor = row["presupuesto"] || row["Presupuesto Definitivo"] || row["total"] || Object.values(row)[1] || 0;
+    
+    
+    return typeof valor === 'string' ? parseFloat(valor.replace(/[^0-9.-]/g, '')) : valor;
+  });
+
+ 
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: tus_etiquetas, 
+      datasets: [{
+        label: data.title || 'Presupuesto total por año',
+        data: tus_valores,    
+        backgroundColor: 'rgba(105, 198, 234, 0.6)', 
+        borderColor: '#69C6EA',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { color: '#ffffff', font: { size: 11 } } },
+        y: { ticks: { color: '#ffffff' } }
+      }
+    }
+  });
+}
+</script>
